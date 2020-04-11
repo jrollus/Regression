@@ -23,6 +23,7 @@ def get_relevant_data(tickers_list, date_start, date_end, data_source):
 
     return selected_data
 
+
 def check_data_retrieval_error(price_data, tickers_list):
     """Check whether there was an error retrieving data"""
     # Check whether data was retrieved successfully:
