@@ -12,7 +12,7 @@ base_number_output_col = 5
 def get_log_returns(price_data):
     """Function to remove line with empty data to ensure the data set is consistent and then compute log returns"""
     # Clear raw data
-    price_data = price_data.dropna()
+    price_data = price_data.fillna(method='ffill')
     # Get log returns
     log_returns = np.log(price_data / price_data.shift(1))
     return log_returns.dropna()
@@ -26,8 +26,8 @@ def get_realized_vol(log_returns, time_window):
     dates_index = log_returns.index
     series_vol_structure = np.zeros((len(dates_index), len(tickers_list)))
     # Compute rolling volatilities
-    for i in range(0,len(tickers_list)):
-        series_vol_structure[:,i] = log_returns[log_returns.columns[i]].rolling(time_window).std() * np.sqrt(252)
+    for i in range(0, len(tickers_list)):
+        series_vol_structure[:, i] = log_returns[log_returns.columns[i]].rolling(time_window).std() * np.sqrt(252)
 
     return pd.DataFrame(series_vol_structure, index=dates_index, columns=tickers_list).dropna()
 
@@ -122,7 +122,8 @@ def process_regression_results(regression_results, min_r_squared, confidence_lev
     # Remove the regressions that do not meet minimum requirements
     filtered_regression_results =\
         filtered_regression_results.loc[(filtered_regression_results['R Square'] > min_r_squared) &
-                               (filtered_regression_results['ADF Stat'] < filtered_regression_results[str(confidence_level)])]
+                                        (filtered_regression_results['ADF Stat'] <
+                                         filtered_regression_results[str(confidence_level)])]
     # For those regression that met the requirements, organize them by dependent variable, sorted from highest to
     # lowest R-Squared
     filtered_regression_results.sort_values(['Dependent Variable', 'R Square'], ascending=[True, False])
