@@ -4,7 +4,7 @@ import data_retrieval as dt
 import calculations as cc
 
 # Constants
-nbr_max_time_windows = 5
+nbr_max_time_windows = 3
 screen_height = 400
 screen_width = 600
 
@@ -31,11 +31,13 @@ class InputParameter(trapi.HasTraits):
     """Class is used to input all of the user parameters through a guy"""
     dependent_var = trapi.Str
     independent_var = trapi.Str
-    time_window = trapi.Int
+    time_windows = trapi.Array(trapi.Int, (nbr_max_time_windows, 1))
     minimum_r_squared = trapi.Float
+    adf_activate = trapi.Bool
     confidence_level = trapi.Float
     reg_model = trapi.Enum("OLS", "NNLS")
     data_source = trapi.Enum("Bloomberg", "Telemaco")
+    data_fill = trapi.Enum("Forward", "Backward", "Drop")
     date_start = trapi.Date
     date_end = trapi.Date
     get_data_button = trapi.Button
@@ -45,11 +47,13 @@ class InputParameter(trapi.HasTraits):
                             trui.Item(name='independent_var', style='custom', label='Independent Variables'),
                             trui.VGroup(trui.Item(name='date_start', label='Date Start'),
                                         trui.Item(name='date_end', label='Date End'),
-                                        trui.Item(name='time_window', label='Time Window'),
+                                        trui.Item(name='time_windows', label='Time Windows'),
                                         trui.Item(name='minimum_r_squared', label='Min. R Squared'),
+                                        trui.Item(name='adf_activate', label='Activate ADF'),
                                         trui.Item(name='confidence_level', label='Conf. Level'),
                                         trui.Item(name='reg_model', label='Model'),
                                         trui.Item(name='data_source', label='Date Source'),
+                                        trui.Item(name='data_fill', label='Date Fill'),
                                         trui.Item(name='save_file', label='Output Path'),
                                         trui.Item(name='get_data_button', label='Run Regression Analysis',
                                                   show_label=False),
@@ -69,6 +73,7 @@ class InputParameter(trapi.HasTraits):
                 self.save_file += '.csv'
 
         # Format input data from GUI
+        time_windows_list = self.time_windows[:, 0].astype(int)
         dependent_var_list = self.dependent_var.strip().split('\n')
         independent_var_list = self.independent_var.strip().split('\n')
 
@@ -86,18 +91,20 @@ class InputParameter(trapi.HasTraits):
             message('You need at least one dependent and one independent variable to conduct the analysis.')
 
         # Compute log returns
-        log_returns = cc.get_log_returns(price_data)
+        log_returns = cc.get_log_returns(price_data, self.data_fill)
 
         # Compute realized volatilities
-        realized_vols = cc.get_realized_vol(log_returns, self.time_window)
+        realized_vols = cc.get_realized_vol(log_returns, time_windows_list)
 
         # Run regression analysis
         regression_results = cc.get_regression_results(dependent_var_list, independent_var_combinations,
-                                                       realized_vols, self.reg_model)
+                                                       realized_vols, self.reg_model, time_windows_list)
 
         # Process regression results
         regression_results = cc.process_regression_results(regression_results, self.minimum_r_squared,
-                                                           self.confidence_level)
+                                                           self.confidence_level, self.adf_activate)
         # Output results to .CSV
         regression_results.to_csv(self.save_file)
 
+        # Message to let the user know that the process is completed
+        message('Analysis successfully completed.')
