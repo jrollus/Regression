@@ -39,6 +39,7 @@ class InputParameter(trapi.HasTraits):
     data_source = trapi.Enum("Bloomberg", "Telemaco")
     data_fill = trapi.Enum("Forward", "Backward", "Drop")
     date_start = trapi.Date
+    date_cutoff = trapi.Date
     date_end = trapi.Date
     get_data_button = trapi.Button
     save_file = trapi.File
@@ -46,6 +47,7 @@ class InputParameter(trapi.HasTraits):
                             trui.Item(name='dependent_var', style='custom', label='Dependent Variables'),
                             trui.Item(name='independent_var', style='custom', label='Independent Variables'),
                             trui.VGroup(trui.Item(name='date_start', label='Date Start'),
+                                        trui.Item(name='date_cutoff', label='Cutoff Training/Testing'),
                                         trui.Item(name='date_end', label='Date End'),
                                         trui.Item(name='time_windows', label='Time Windows'),
                                         trui.Item(name='minimum_r_squared', label='Min. R Squared'),
@@ -98,7 +100,8 @@ class InputParameter(trapi.HasTraits):
 
         # Run regression analysis
         regression_results = cc.get_regression_results(dependent_var_list, independent_var_combinations,
-                                                       realized_vols, self.reg_model, time_windows_list)
+                                                       realized_vols, self.reg_model, time_windows_list,
+                                                       self.date_cutoff)
 
         # Process regression results
         regression_results = cc.process_regression_results(regression_results, self.minimum_r_squared,
